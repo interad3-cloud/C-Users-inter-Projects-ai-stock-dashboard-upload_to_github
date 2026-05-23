@@ -1,4 +1,4 @@
-"""현대적 금융 앱 UI — 글로벌 CSS·카드·시그널 패널."""
+"""현대적 금융 앱 UI — 라이트 모드 전용 CSS·카드·시그널 패널."""
 
 from __future__ import annotations
 
@@ -14,10 +14,33 @@ _TONE = {
 
 GLOBAL_CSS = """
 <style>
-  .block-container { padding-top: 1.5rem; max-width: 1400px; }
-  div[data-testid="stAppViewContainer"] {
-    background: linear-gradient(180deg, #F5F7FA 0%, #EEF2F6 100%);
+  /* 라이트 모드 고정 — 다크/시스템 설정 무시 */
+  .stApp,
+  .stApp[data-theme="dark"],
+  .stApp[data-theme="light"] {
+    color-scheme: light !important;
+    --background-color: #F5F7FA;
+    --secondary-background-color: #FFFFFF;
+    --text-color: #101828;
+    --primary-color: #003366;
   }
+  [data-testid="stThemeSwitcher"] { display: none !important; }
+  div[data-testid="stAppViewContainer"],
+  section[data-testid="stSidebar"],
+  section[data-testid="stSidebar"] > div {
+    background: #F5F7FA !important;
+  }
+  section[data-testid="stSidebar"] label,
+  section[data-testid="stSidebar"] p,
+  section[data-testid="stSidebar"] span,
+  section[data-testid="stSidebar"] h1,
+  section[data-testid="stSidebar"] h2,
+  section[data-testid="stSidebar"] h3 {
+    color: #101828 !important;
+  }
+
+  .block-container { padding-top: 1.5rem; max-width: 1400px; }
+
   .fin-card {
     background: #FFFFFF;
     border: 1px solid #E4E7EC;
@@ -25,6 +48,7 @@ GLOBAL_CSS = """
     padding: 20px 24px;
     margin-bottom: 16px;
     box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+    color: #101828;
   }
   .fin-card-header {
     font-size: 0.72rem;
@@ -121,6 +145,30 @@ GLOBAL_CSS = """
     font-size: 0.8rem;
     color: #667085;
     margin-bottom: 12px;
+  }
+
+  /* Streamlit 기본 UI — 라이트 고정 */
+  .stApp [data-testid="stMarkdownContainer"] p,
+  .stApp [data-testid="stMarkdownContainer"] li,
+  .stApp [data-testid="stCaptionContainer"],
+  .stApp [data-testid="stCaptionContainer"] p,
+  .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5 {
+    color: #101828 !important;
+  }
+  .stApp [data-testid="stDataFrame"] td,
+  .stApp [data-testid="stDataFrame"] th,
+  .stApp [data-testid="stTable"] td,
+  .stApp [data-testid="stTable"] th,
+  .stApp .dataframe td,
+  .stApp .dataframe th {
+    color: #101828 !important;
+    background-color: #FFFFFF !important;
+    border-color: #E4E7EC !important;
+  }
+  .stApp [data-testid="stDataFrame"] th,
+  .stApp .dataframe thead th {
+    background-color: #F5F7FA !important;
+    color: #101828 !important;
   }
 </style>
 """

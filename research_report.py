@@ -447,8 +447,8 @@ REPORT_CSS = """
     margin-bottom: 20px;
 }
 .ls-title { font-size: 1.55rem; font-weight: 700; color: #003366; margin: 0; }
-.ls-subtitle { font-size: 0.85rem; color: #555; margin-top: 4px; }
-.ls-meta { text-align: right; font-size: 0.85rem; line-height: 1.7; }
+.ls-subtitle { font-size: 0.85rem; color: #555555; margin-top: 4px; }
+.ls-meta { text-align: right; font-size: 0.85rem; line-height: 1.7; color: #333333; }
 .ls-buy { color: #c62828; font-weight: 700; font-size: 1.1rem; }
 .ls-section-title {
     font-size: 0.95rem;
@@ -458,8 +458,8 @@ REPORT_CSS = """
     padding-left: 10px;
     margin: 24px 0 10px 0;
 }
-.ls-body { font-size: 0.88rem; line-height: 1.75; color: #333; text-align: justify; }
-.ls-points { margin: 0; padding-left: 18px; }
+.ls-body { font-size: 0.88rem; line-height: 1.75; color: #333333; text-align: justify; }
+.ls-points { margin: 0; padding-left: 18px; color: #333333; }
 .ls-points li { margin-bottom: 8px; font-size: 0.88rem; line-height: 1.65; }
 .ls-stock-box {
     background: #f5f7fa;
@@ -468,8 +468,9 @@ REPORT_CSS = """
     font-size: 0.82rem;
     line-height: 1.8;
     margin: 16px 0;
+    color: #333333;
 }
-.ls-footer { font-size: 0.72rem; color: #888; margin-top: 28px; border-top: 1px solid #eee; padding-top: 12px; }
+.ls-footer { font-size: 0.72rem; color: #666666; margin-top: 28px; border-top: 1px solid #eeeeee; padding-top: 12px; }
 .ls-surprise {
     background: #fff3e0;
     border-left: 4px solid #ff9800;
@@ -477,11 +478,35 @@ REPORT_CSS = """
     margin: 12px 0 16px 0;
     font-size: 0.88rem;
     font-weight: 600;
+    color: #333333;
 }
 .ls-scenario-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 12px 0; }
-.ls-scenario-table th { background: #003366; color: white; padding: 6px 8px; }
-.ls-scenario-table td { border: 1px solid #ddd; padding: 6px 8px; text-align: right; }
+.ls-scenario-table th { background: #003366; color: #ffffff; padding: 6px 8px; }
+.ls-scenario-table td {
+    background: #ffffff;
+    color: #1a1a1a;
+    border: 1px solid #dddddd;
+    padding: 6px 8px;
+    text-align: right;
+}
+.ls-scenario-table tbody tr:nth-child(even) td { background: #f5f7fa; }
 .ls-scenario-table td:first-child { text-align: left; font-weight: 600; }
+.ls-fin-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 12px 0; }
+.ls-fin-table th { background: #003366; color: #ffffff; padding: 6px 8px; text-align: right; }
+.ls-fin-table td {
+    background: #ffffff;
+    color: #1a1a1a;
+    border: 1px solid #dddddd;
+    padding: 6px 8px;
+    text-align: right;
+}
+.ls-fin-table tbody tr:nth-child(even) td { background: #f5f7fa; }
+.ls-fin-table tbody th {
+    text-align: left;
+    font-weight: 600;
+    background: #eef2f6;
+    color: #1a1a1a;
+}
 .ls-brand { color: #003366; font-weight: 700; font-size: 0.78rem; }
 </style>
 """

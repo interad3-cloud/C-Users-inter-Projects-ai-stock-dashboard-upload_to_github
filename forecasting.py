@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
+import streamlit as st
 
 from analyst import AnalysisContext, analyze_macro_sensitivity, classify_sector, run_advanced_analysis
 from config import (
@@ -608,4 +609,25 @@ def run_financial_forecast(
         consensus_diff_pct=adaptive.consensus_diff_pct,
         consensus_correction_note=adaptive.consensus_correction_note,
         forward_multiple_anchor=adaptive.forward_multiple_anchor,
+    )
+
+
+@st.cache_data(ttl=3600, show_spinner="재무 추정·목표주가 계산 중...")
+def run_cached_financial_forecast(ticker: str, period: str) -> ForecastResult | None:
+    """티커·기간별 추정 결과 캐시 — Cloud 재접속·탭 전환 시 재계산 방지."""
+    from data_loader import load_analysis_data
+    from financials import extract_annual_series
+
+    bundle = load_analysis_data(ticker, period)
+    series = extract_annual_series(
+        bundle["fin_data"].get("financials"),
+        bundle["fin_data"].get("balance_sheet"),
+        bundle["fin_data"].get("cashflow"),
+    )
+    return run_financial_forecast(
+        series,
+        bundle["info"],
+        financials=bundle["fin_data"].get("financials"),
+        earnings_estimates=bundle["earnings_est"],
+        quarterly_financials=bundle["quarterly_fin"],
     )

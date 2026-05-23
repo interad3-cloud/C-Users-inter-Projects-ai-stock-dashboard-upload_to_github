@@ -45,58 +45,76 @@ def validate_ticker(ticker: str) -> str:
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def fetch_price_history(ticker: str, period: str) -> pd.DataFrame:
-    """일별 OHLCV 주가 데이터."""
+def load_analysis_data(ticker: str, period: str) -> dict:
+    """
+    yfinance 호출을 1회 Ticker 객체로 통합 — Cloud에서 API 왕복 횟수 최소화.
+    """
     stock = yf.Ticker(ticker)
-    df = stock.history(period=period, auto_adjust=False)
-    if df is None or df.empty:
+    price_df = stock.history(period=period, auto_adjust=False)
+    if price_df is None or price_df.empty:
         raise TickerNotFoundError("no_history")
-    df = df.copy()
-    df.index = pd.to_datetime(df.index)
+    price_df = price_df.copy()
+    price_df.index = pd.to_datetime(price_df.index)
     required = ["Open", "High", "Low", "Close", "Volume"]
     for col in required:
-        if col not in df.columns:
+        if col not in price_df.columns:
             raise TickerNotFoundError("missing_columns")
-    return df[required]
+    price_df = price_df[required]
+
+    info = stock.info or {}
+    if not info:
+        info = {"symbol": ticker}
+    else:
+        info = dict(info)
+
+    try:
+        earnings_est = _safe_df(stock.earnings_estimate)
+    except Exception:
+        earnings_est = None
+
+    quarterly_fin = _safe_df(stock.quarterly_financials)
+
+    return {
+        "price_df": price_df,
+        "fin_data": {
+            "financials": _safe_df(stock.financials),
+            "balance_sheet": _safe_df(stock.balance_sheet),
+            "cashflow": _safe_df(stock.cashflow),
+        },
+        "info": info,
+        "earnings_est": earnings_est,
+        "quarterly_fin": quarterly_fin,
+    }
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_price_history(ticker: str, period: str) -> pd.DataFrame:
+    """일별 OHLCV 주가 데이터."""
+    return load_analysis_data(ticker, period)["price_df"]
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_earnings_estimates(ticker: str) -> pd.DataFrame | None:
     """분석가 컨센서스 (earnings_estimates)."""
-    stock = yf.Ticker(ticker)
-    try:
-        est = stock.earnings_estimate
-        return _safe_df(est)
-    except Exception:
-        return None
+    return load_analysis_data(ticker, "1y")["earnings_est"]
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_quarterly_financials(ticker: str) -> pd.DataFrame | None:
     """분기 손익계산서."""
-    stock = yf.Ticker(ticker)
-    return _safe_df(stock.quarterly_financials)
+    return load_analysis_data(ticker, "1y")["quarterly_fin"]
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_financial_statements(ticker: str) -> dict[str, pd.DataFrame | None]:
     """손익계산서, 재무상태표, 현금흐름표."""
-    stock = yf.Ticker(ticker)
-    return {
-        "financials": _safe_df(stock.financials),
-        "balance_sheet": _safe_df(stock.balance_sheet),
-        "cashflow": _safe_df(stock.cashflow),
-    }
+    return load_analysis_data(ticker, "1y")["fin_data"]
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_ticker_info(ticker: str) -> dict:
     """종목 기본 정보 및 밸류에이션 지표."""
-    stock = yf.Ticker(ticker)
-    info = stock.info or {}
-    if not info:
-        return {"symbol": ticker}
-    return dict(info)
+    return load_analysis_data(ticker, "1y")["info"]
 
 
 def _safe_df(data) -> pd.DataFrame | None:

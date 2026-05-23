@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+from functools import lru_cache
 
 # Market Standard — 섹터별 PER/PSR 가이드라인
 SECTOR_PER_BANDS: dict[str, tuple[float, float]] = {
@@ -330,14 +331,21 @@ def resolve_market_consensus(info: dict) -> dict:
 
 
 def fetch_sector_peer_forward_anchor(info: dict) -> tuple[float | None, float | None, str]:
-    """동종 업계 대표 종목 Forward PER/PSR 실시간 평균."""
+    """동종 업계 대표 종목 Forward PER/PSR 실시간 평균 (섹터별 캐시)."""
+    sector = (info.get("sector") or "").strip()
+    if not sector:
+        return None, None, ""
+    return _peer_forward_by_sector(sector)
+
+
+@lru_cache(maxsize=16)
+def _peer_forward_by_sector(sector: str) -> tuple[float | None, float | None, str]:
     try:
         import yfinance as yf
     except ImportError:
         return None, None, ""
 
-    sector = (info.get("sector") or "").strip()
-    peers = SECTOR_PEER_TICKERS.get(sector, [])[:4]
+    peers = SECTOR_PEER_TICKERS.get(sector, [])[:2]
     if not peers:
         return None, None, ""
 

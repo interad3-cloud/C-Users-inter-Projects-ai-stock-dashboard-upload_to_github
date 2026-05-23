@@ -3,7 +3,17 @@
 PERIOD_OPTIONS = {
     "최근 1년": "1y",
     "최근 3년": "3y",
-    "최근 5년": "5y",
+    "최근 5년": "5y",[theme]
+base = "light"
+primaryColor = "#3182F6"
+backgroundColor = "#F8F9FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#191F28"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
 }
 
 # yfinance 재무제표 행 이름 → 한국어 지표명 (fallback 순서대로 탐색)

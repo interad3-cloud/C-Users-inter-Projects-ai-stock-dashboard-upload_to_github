@@ -12,13 +12,14 @@ st.set_page_config(
 
 try:
     from charts import (
+        PLOTLY_INTERACTIVE_CONFIG,
         build_forecast_bar_chart,
         build_price_chart,
         build_revenue_profit_bar,
         build_scenario_chart,
         build_target_price_chart,
     )
-    from config import DISCLAIMER_KO, PERIOD_OPTIONS
+    from config import DISCLAIMER_KO, PERIOD_OPTIONS, PRICE_CHART_LOAD_PERIOD
     from formatting import format_percent, format_price, format_ratio, resolve_currency
     from data_loader import (
         TickerNotFoundError,
@@ -40,7 +41,7 @@ try:
         render_app_hero,
         render_card_open,
         render_card_close,
-        render_chart_period_selector,
+        render_chart_zoom_hint,
         render_kpi_row,
         render_no_ticker_notice,
         render_section_heading,
@@ -517,9 +518,9 @@ def main() -> None:
 
     with tab_chart:
         render_card_open("주가 · 기술적 지표")
-        chart_period = render_chart_period_selector()
+        render_chart_zoom_hint()
         try:
-            chart_price_df = fetch_chart_price_history(ticker, chart_period)
+            chart_price_df = fetch_chart_price_history(ticker, PRICE_CHART_LOAD_PERIOD)
         except TickerNotFoundError:
             chart_price_df = price_df
 
@@ -532,7 +533,12 @@ def main() -> None:
             fig = build_price_chart(
                 chart_price_df, ma_df, rsi, macd_df, bb_df, crossovers
             )
-            st.plotly_chart(fig, use_container_width=True, key="tab_price_chart")
+            st.plotly_chart(
+                fig,
+                use_container_width=True,
+                key="tab_price_chart",
+                config=PLOTLY_INTERACTIVE_CONFIG,
+            )
         with insight_col:
             render_technical_signals_panel(tech_summary)
         render_card_close()

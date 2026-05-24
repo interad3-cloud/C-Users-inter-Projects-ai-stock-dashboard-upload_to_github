@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import streamlit as st
 
-from config import CHART_PERIOD_OPTIONS
 from formatting import format_market_cap, format_percent, format_price, format_ratio, resolve_currency
 
 # KR 시장: 상승 Red · 하락 Blue
@@ -37,6 +36,44 @@ GLOBAL_CSS = """
     border-right: 1px solid #EDEDED !important;
   }
   section[data-testid="stSidebar"] .block-container { padding: 1.25rem 1rem !important; }
+
+  /* 사이드바 · 메인 — 텍스트 가독성 강제 */
+  section[data-testid="stSidebar"] *,
+  section[data-testid="stSidebar"] label,
+  section[data-testid="stSidebar"] p,
+  section[data-testid="stSidebar"] span,
+  section[data-testid="stSidebar"] li,
+  section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+  section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+  section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] label,
+  section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+  section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+    color: #31333F !important;
+  }
+  section[data-testid="stSidebar"] h1,
+  section[data-testid="stSidebar"] h2,
+  section[data-testid="stSidebar"] h3,
+  section[data-testid="stSidebar"] [data-testid="stHeader"] {
+    color: #000000 !important;
+    font-weight: 700 !important;
+  }
+  section[data-testid="stSidebar"] input,
+  section[data-testid="stSidebar"] textarea,
+  section[data-testid="stSidebar"] [data-baseweb="select"] {
+    color: #000000 !important;
+  }
+  section[data-testid="stSidebar"] ::placeholder {
+    color: #6B7280 !important;
+    opacity: 1 !important;
+  }
+
+  .main label[data-testid="stWidgetLabel"] p,
+  .main [data-testid="stWidgetLabel"] p,
+  .main [data-testid="stMarkdownContainer"] p,
+  .main [data-testid="stCaptionContainer"] p,
+  .main h1, .main h2, .main h3, .main h4 {
+    color: #31333F !important;
+  }
 
   .main .block-container {
     padding-top: 1rem;
@@ -252,24 +289,12 @@ def render_card_close() -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-def render_chart_period_selector(key: str = "chart_period_label") -> str:
-    """차트 기간 선택 — yfinance period 코드 반환."""
-    labels = list(CHART_PERIOD_OPTIONS.keys())
-    if key not in st.session_state:
-        st.session_state[key] = "1년"
-    st.markdown('<div class="fin-period-wrap">', unsafe_allow_html=True)
-    st.markdown('<p class="fin-period-label">차트 기간</p>', unsafe_allow_html=True)
-    selected = st.radio(
-        "차트 기간",
-        labels,
-        index=labels.index(st.session_state[key]),
-        horizontal=True,
-        label_visibility="collapsed",
-        key=f"{key}_radio",
+def render_chart_zoom_hint() -> None:
+    st.markdown(
+        '<p class="fin-caption">최근 1년 기준 표시 · 마우스 휠 확대/축소 · 드래그 이동 · '
+        "최대 5년 데이터 탐색 가능</p>",
+        unsafe_allow_html=True,
     )
-    st.session_state[key] = selected
-    st.markdown("</div>", unsafe_allow_html=True)
-    return CHART_PERIOD_OPTIONS[selected]
 
 
 def _change_badge_html(change) -> str:

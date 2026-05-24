@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from indicators import MaCrossover, compute_volume_profile
+from config import PRICE_CHART_DEFAULT_VIEW_DAYS
 
 _CHART_COLORS = {
     "paper": "rgba(0,0,0,0)",
@@ -21,8 +22,16 @@ _CHART_COLORS = {
     "rsi": "#7E57C2",
     "macd": "#3182F6",
     "signal": "#FF7043",
-    "up": "#E53935",
+    "up": "#D32F2F",
     "down": "#1565C0",
+}
+
+# Plotly 인터랙션 — 휠 줌 · 드래그 팬
+PLOTLY_INTERACTIVE_CONFIG = {
+    "scrollZoom": True,
+    "displayModeBar": True,
+    "responsive": True,
+    "modeBarButtonsToRemove": ["lasso2d", "select2d"],
 }
 
 
@@ -86,7 +95,7 @@ def build_price_chart(
         rows=3,
         cols=2,
         column_widths=[0.96, 0.04],
-        shared_xaxes=False,
+        shared_xaxes=True,
         shared_yaxes=False,
         vertical_spacing=0.09,
         row_heights=[0.62, 0.10, 0.10],
@@ -139,8 +148,9 @@ def build_price_chart(
             decreasing_line_color=_CHART_COLORS["down"],
             increasing_fillcolor=_CHART_COLORS["up"],
             decreasing_fillcolor=_CHART_COLORS["down"],
-            increasing_line_width=1.2,
-            decreasing_line_width=1.2,
+            increasing_line_width=2.0,
+            decreasing_line_width=2.0,
+            whiskerwidth=0.6,
         ),
         row=1,
         col=1,
@@ -252,12 +262,19 @@ def build_price_chart(
             y=macd_df["Histogram"],
             name="Histogram",
             marker_color=hist_colors,
-            opacity=0.45,
+            opacity=0.55,
             showlegend=False,
         ),
         row=3,
         col=1,
     )
+
+    default_start = None
+    default_end = None
+    if len(price_df.index) > 0:
+        default_end = price_df.index[-1]
+        view_start = default_end - pd.Timedelta(days=PRICE_CHART_DEFAULT_VIEW_DAYS)
+        default_start = max(price_df.index[0], view_start)
 
     fig.update_layout(
         height=780,
@@ -266,6 +283,7 @@ def build_price_chart(
         paper_bgcolor=_CHART_COLORS["paper"],
         plot_bgcolor=_CHART_COLORS["plot"],
         showlegend=False,
+        dragmode="zoom",
         font=dict(
             family="Pretendard, Malgun Gothic, Apple SD Gothic Neo, sans-serif",
             size=11,
@@ -273,7 +291,11 @@ def build_price_chart(
         ),
         margin=dict(l=48, r=12, t=24, b=32),
         barmode="overlay",
+        hovermode="x unified",
     )
+    if default_start is not None and default_end is not None:
+        fig.update_xaxes(range=[default_start, default_end], row=1, col=1)
+    fig.update_xaxes(showticklabels=True, row=3, col=1, gridcolor=_CHART_COLORS["grid"])
     fig.update_xaxes(showticklabels=False, row=1, col=1, gridcolor=_CHART_COLORS["grid"])
     fig.update_xaxes(showticklabels=False, row=2, col=1, gridcolor=_CHART_COLORS["grid"])
     fig.update_yaxes(title_text="", row=1, col=1, gridcolor=_CHART_COLORS["grid"])

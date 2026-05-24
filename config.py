@@ -14,6 +14,10 @@ CHART_PERIOD_OPTIONS = {
     "전체": "max",
 }
 
+# 주가 차트: 5년치 로드 · 초기 화면 1년
+PRICE_CHART_LOAD_PERIOD = "5y"
+PRICE_CHART_DEFAULT_VIEW_DAYS = 365
+
 # yfinance 재무제표 행 이름 → 한국어 지표명 (fallback 순서대로 탐색)
 FINANCIAL_ROW_KEYS = {
     "revenue": ["Total Revenue", "Revenue", "Operating Revenue"],

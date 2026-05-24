@@ -88,6 +88,22 @@ def load_analysis_data(ticker: str, period: str) -> dict:
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
+def fetch_chart_price_history(ticker: str, period: str) -> pd.DataFrame:
+    """차트 전용 OHLCV — 분석 번들과 분리."""
+    stock = yf.Ticker(ticker)
+    df = stock.history(period=period, auto_adjust=False)
+    if df is None or df.empty:
+        raise TickerNotFoundError("no_history")
+    df = df.copy()
+    df.index = pd.to_datetime(df.index)
+    required = ["Open", "High", "Low", "Close", "Volume"]
+    for col in required:
+        if col not in df.columns:
+            raise TickerNotFoundError("missing_columns")
+    return df[required]
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
 def fetch_price_history(ticker: str, period: str) -> pd.DataFrame:
     """일별 OHLCV 주가 데이터."""
     return load_analysis_data(ticker, period)["price_df"]

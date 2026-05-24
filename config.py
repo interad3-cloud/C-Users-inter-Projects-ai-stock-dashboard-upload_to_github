@@ -6,6 +6,14 @@ PERIOD_OPTIONS = {
     "최근 5년": "5y",
 }
 
+CHART_PERIOD_OPTIONS = {
+    "1일": "1d",
+    "5일": "5d",
+    "1개월": "1mo",
+    "1년": "1y",
+    "전체": "max",
+}
+
 # yfinance 재무제표 행 이름 → 한국어 지표명 (fallback 순서대로 탐색)
 FINANCIAL_ROW_KEYS = {
     "revenue": ["Total Revenue", "Revenue", "Operating Revenue"],

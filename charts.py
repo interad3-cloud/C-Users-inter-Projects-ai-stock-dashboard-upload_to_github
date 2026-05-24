@@ -95,7 +95,7 @@ def build_price_chart(
             [{"colspan": 2}, None],
             [{"colspan": 2}, None],
         ],
-        subplot_titles=("주가", None, "RSI (14)", "MACD"),
+        subplot_titles=("", None, "", ""),
     )
 
     # 볼린저 밴드 — 배경만 (opacity 0.1)
@@ -139,6 +139,8 @@ def build_price_chart(
             decreasing_line_color=_CHART_COLORS["down"],
             increasing_fillcolor=_CHART_COLORS["up"],
             decreasing_fillcolor=_CHART_COLORS["down"],
+            increasing_line_width=1.2,
+            decreasing_line_width=1.2,
         ),
         row=1,
         col=1,
@@ -155,7 +157,8 @@ def build_price_chart(
                     y=ma_df[col],
                     mode="lines",
                     name=label,
-                    line=dict(width=1.3, color=color),
+                    line=dict(width=1.8, color=color),
+                    showlegend=False,
                 ),
                 row=1,
                 col=1,
@@ -201,7 +204,8 @@ def build_price_chart(
             x=rsi.index,
             y=rsi,
             name="RSI",
-            line=dict(color=_CHART_COLORS["rsi"], width=1.4),
+            line=dict(color=_CHART_COLORS["rsi"], width=1.6),
+            showlegend=False,
         ),
         row=2,
         col=1,
@@ -221,7 +225,8 @@ def build_price_chart(
             x=macd_df.index,
             y=macd_df["MACD"],
             name="MACD",
-            line=dict(color=_CHART_COLORS["macd"], width=1.2),
+            line=dict(color=_CHART_COLORS["macd"], width=1.5),
+            showlegend=False,
         ),
         row=3,
         col=1,
@@ -231,7 +236,8 @@ def build_price_chart(
             x=macd_df.index,
             y=macd_df["Signal"],
             name="Signal",
-            line=dict(color=_CHART_COLORS["signal"], width=1.2),
+            line=dict(color=_CHART_COLORS["signal"], width=1.5),
+            showlegend=False,
         ),
         row=3,
         col=1,
@@ -259,29 +265,22 @@ def build_price_chart(
         template="plotly_white",
         paper_bgcolor=_CHART_COLORS["paper"],
         plot_bgcolor=_CHART_COLORS["plot"],
+        showlegend=False,
         font=dict(
             family="Pretendard, Malgun Gothic, Apple SD Gothic Neo, sans-serif",
             size=11,
             color=_CHART_COLORS["text"],
         ),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.01,
-            xanchor="left",
-            x=0,
-            bgcolor="rgba(255,255,255,0.6)",
-        ),
-        margin=dict(l=48, r=12, t=48, b=32),
+        margin=dict(l=48, r=12, t=24, b=32),
         barmode="overlay",
     )
     fig.update_xaxes(showticklabels=False, row=1, col=1, gridcolor=_CHART_COLORS["grid"])
     fig.update_xaxes(showticklabels=False, row=2, col=1, gridcolor=_CHART_COLORS["grid"])
-    fig.update_yaxes(title_text="가격", row=1, col=1, gridcolor=_CHART_COLORS["grid"])
+    fig.update_yaxes(title_text="", row=1, col=1, gridcolor=_CHART_COLORS["grid"])
     fig.update_yaxes(showticklabels=False, row=1, col=2, matches="y")
     fig.update_xaxes(showticklabels=False, row=1, col=2)
-    fig.update_yaxes(title_text="RSI", row=2, col=1, range=[0, 100], gridcolor=_CHART_COLORS["grid"])
-    fig.update_yaxes(title_text="MACD", row=3, col=1, gridcolor=_CHART_COLORS["grid"])
+    fig.update_yaxes(title_text="", row=2, col=1, range=[0, 100], gridcolor=_CHART_COLORS["grid"])
+    fig.update_yaxes(title_text="", row=3, col=1, gridcolor=_CHART_COLORS["grid"])
 
     return fig
 
@@ -429,4 +428,55 @@ def build_revenue_profit_bar(chart_df: pd.DataFrame) -> go.Figure | None:
         yaxis_title="금액",
     )
     fig.update_layout(barmode="group")
+    return fig
+
+
+def build_fear_greed_gauge(value: int, label: str) -> go.Figure:
+    """공포/탐욕 지수 게이지."""
+    fig = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=value,
+            number={"suffix": "", "font": {"size": 36, "color": "#111111"}},
+            title={"text": label, "font": {"size": 14, "color": "#666666"}},
+            gauge={
+                "axis": {"range": [0, 100], "tickwidth": 1, "tickcolor": "#DDDDDD"},
+                "bar": {"color": "#E42828", "thickness": 0.28},
+                "bgcolor": "#FFFFFF",
+                "borderwidth": 0,
+                "steps": [
+                    {"range": [0, 25], "color": "#E3F2FD"},
+                    {"range": [25, 45], "color": "#E8F5E9"},
+                    {"range": [45, 55], "color": "#FFF8E1"},
+                    {"range": [55, 75], "color": "#FFE0B2"},
+                    {"range": [75, 100], "color": "#FFCDD2"},
+                ],
+            },
+        )
+    )
+    fig.update_layout(
+        height=260,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=24, r=24, t=40, b=8),
+        font=dict(family="Pretendard, Malgun Gothic, sans-serif"),
+    )
+    return fig
+
+
+def build_treasury_chart(history: pd.DataFrame) -> go.Figure:
+    """미국 10년물 국채 금리 추이."""
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=history.index,
+            y=history["rate"],
+            mode="lines",
+            line=dict(color="#E42828", width=2.2),
+            fill="tozeroy",
+            fillcolor="rgba(228, 40, 40, 0.08)",
+            hovertemplate="%{x|%Y-%m-%d}<br>%{y:.2f}%<extra></extra>",
+        )
+    )
+    _apply_chart_layout(fig, height=320, yaxis_title="금리 (%)", showlegend=False)
     return fig

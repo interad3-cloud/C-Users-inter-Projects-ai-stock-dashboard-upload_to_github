@@ -15,6 +15,7 @@ from config import DISCLAIMER_KO, PERIOD_OPTIONS
 from formatting import format_percent, format_price, format_ratio, resolve_currency
 from data_loader import (
     TickerNotFoundError,
+    fetch_chart_price_history,
     load_analysis_data,
     validate_ticker,
 )
@@ -23,10 +24,15 @@ from forecasting import run_cached_financial_forecast
 from indicators import enrich_price_data, summarize_technical_indicators
 from research_report import build_research_report, render_report_html
 from report_pdf import generate_report_pdf
+from macro_dashboard import render_macro_dashboard
 from ui_components import (
     inject_global_styles,
     render_app_hero,
+    render_card_open,
+    render_card_close,
+    render_chart_period_selector,
     render_kpi_row,
+    render_no_ticker_notice,
     render_section_heading,
     render_stock_header_card,
     render_technical_signals_panel,
@@ -368,11 +374,53 @@ def render_forecast_tab(
         )
 
 
+def render_financial_tab(
+    series: dict,
+    info: dict,
+    metrics_df,
+    chart_df,
+    forecast_result,
+    currency: str,
+    ticker: str,
+    period: str,
+) -> None:
+    """재무분석 — 재무제표 + 실적 전망 통합."""
+    render_section_heading("재무 분석")
+    st.markdown(
+        '<p class="fin-caption">재무제표 · 실적 추정 · 목표주가를 한 화면에서 확인합니다.</p>',
+        unsafe_allow_html=True,
+    )
+
+    render_card_open("주요 재무 지표 (최근 4개년)")
+    if metrics_df.empty:
+        st.warning("재무제표 데이터를 가져올 수 없습니다.")
+    else:
+        st.dataframe(
+            metrics_df.style.format("{:,.2f}", na_rep="-"),
+            use_container_width=True,
+            key="tab_fin_metrics_table",
+        )
+        st.caption("부채비율 = 총부채÷자본, ROE = 당기순이익÷자본×100.")
+    render_card_close()
+
+    bar_fig = build_revenue_profit_bar(chart_df)
+    if bar_fig:
+        render_card_open("매출 · 영업이익 추이")
+        st.plotly_chart(bar_fig, use_container_width=True, key="tab_fin_revenue_bar")
+        render_card_close()
+
+    st.divider()
+    if forecast_result is None:
+        with st.spinner("재무 추정·목표주가 계산 중..."):
+            forecast_result = run_cached_financial_forecast(ticker, period)
+    render_forecast_tab(series, info, metrics_df, forecast_result, currency)
+
+
 def main() -> None:
     inject_global_styles()
     render_app_hero(
         "주식 분석 대시보드",
-        "차트 · 재무제표 · 실적 전망 · 증권사 리포트",
+        "주가 · 재무 · 매크로 · 리포트",
     )
 
     with st.sidebar:
@@ -384,7 +432,7 @@ def main() -> None:
                 placeholder="예: AAPL, TSLA, 005930.KS",
                 help="미국·한국 등 Yahoo Finance 지원 티커를 입력하세요.",
             )
-            period_label = st.selectbox("분석 기간", list(PERIOD_OPTIONS.keys()))
+            period_label = st.selectbox("재무 분석 기간", list(PERIOD_OPTIONS.keys()))
             start = st.form_submit_button(
                 "분석 시작", type="primary", use_container_width=True
             )
@@ -393,21 +441,41 @@ def main() -> None:
         st.session_state.ticker_draft = ticker_input
         if not ticker_input.strip():
             st.warning("티커를 입력해 주세요.")
-            st.stop()
-        try:
-            normalized = validate_ticker(ticker_input)
-            st.session_state.analysis_ticker = normalized
-            st.session_state.analysis_period_label = period_label
-        except TickerNotFoundError:
-            st.warning("올바른 티커를 입력해 주세요.")
-            st.stop()
+        else:
+            try:
+                normalized = validate_ticker(ticker_input)
+                st.session_state.analysis_ticker = normalized
+                st.session_state.analysis_period_label = period_label
+            except TickerNotFoundError:
+                st.warning("올바른 티커를 입력해 주세요.")
 
     ticker = st.session_state.analysis_ticker
     period_label = st.session_state.analysis_period_label
+    has_ticker = bool(ticker and period_label)
 
-    if not ticker or not period_label:
-        st.info("👈 사이드바에서 티커와 분석 기간을 선택한 뒤 **분석 시작**을 눌러 주세요.")
-        st.stop()
+    tab_chart, tab_fin, tab_macro, tab_report = st.tabs(
+        [
+            "주가/기술적 지표",
+            "재무분석",
+            "매크로 지표",
+            "증권사 리포트",
+        ]
+    )
+
+    # 매크로 — 종목과 무관하게 항상 표시
+    with tab_macro:
+        render_macro_dashboard()
+
+    if not has_ticker:
+        with tab_chart:
+            render_no_ticker_notice()
+        with tab_fin:
+            render_no_ticker_notice()
+        with tab_report:
+            render_no_ticker_notice()
+        st.divider()
+        st.caption(DISCLAIMER_KO)
+        return
 
     period = PERIOD_OPTIONS[period_label]
 
@@ -417,19 +485,15 @@ def main() -> None:
         price_df = bundle["price_df"]
         fin_data = bundle["fin_data"]
         info = bundle["info"]
-        earnings_est = bundle["earnings_est"]
-        quarterly_fin = bundle["quarterly_fin"]
     except TickerNotFoundError:
         st.warning("올바른 티커를 입력해 주세요.")
-        st.stop()
+        return
     except Exception:
         st.error("데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.")
-        st.stop()
+        return
 
     currency = render_header(info, ticker)
 
-    ma_df, rsi, macd_df, bb_df, crossovers = enrich_price_data(price_df)
-    tech_summary = summarize_technical_indicators(price_df, rsi, macd_df, bb_df, crossovers)
     series = extract_annual_series(
         fin_data.get("financials"),
         fin_data.get("balance_sheet"),
@@ -437,57 +501,34 @@ def main() -> None:
     )
     metrics_df = build_metrics_table(series)
     chart_df = compute_annual_amounts_chart(series)
-
-    tab_chart, tab_fin, tab_forecast, tab_report = st.tabs(
-        [
-            "주가 및 기술적 차트",
-            "재무제표 분석",
-            "향후 3개년 실적 전망 및 추정 소견",
-            "증권사 리포트",
-        ]
-    )
-
     forecast_result = None
 
     with tab_chart:
-        st.markdown(
-            '<div class="fin-card" style="padding-bottom:8px;">'
-            '<p class="fin-section-title">주가 및 기술적 지표</p>'
-            '<p class="fin-section-caption">MA 20·60 · 볼린저 밴드 · 매물대 · RSI · MACD</p>'
-            "</div>",
-            unsafe_allow_html=True,
+        render_card_open("주가 · 기술적 지표")
+        chart_period = render_chart_period_selector()
+        try:
+            chart_price_df = fetch_chart_price_history(ticker, chart_period)
+        except TickerNotFoundError:
+            chart_price_df = price_df
+
+        ma_df, rsi, macd_df, bb_df, crossovers = enrich_price_data(chart_price_df)
+        tech_summary = summarize_technical_indicators(
+            chart_price_df, rsi, macd_df, bb_df, crossovers
         )
         chart_col, insight_col = st.columns([4, 1], gap="medium")
         with chart_col:
-            fig = build_price_chart(price_df, ma_df, rsi, macd_df, bb_df, crossovers)
+            fig = build_price_chart(
+                chart_price_df, ma_df, rsi, macd_df, bb_df, crossovers
+            )
             st.plotly_chart(fig, use_container_width=True, key="tab_price_chart")
         with insight_col:
             render_technical_signals_panel(tech_summary)
+        render_card_close()
 
     with tab_fin:
-        render_section_heading("주요 재무 지표 (최근 4개년)")
-        if metrics_df.empty:
-            st.warning("재무제표 데이터를 가져올 수 없습니다.")
-        else:
-            st.dataframe(
-                metrics_df.style.format("{:,.2f}", na_rep="-"),
-                use_container_width=True,
-                key="tab_fin_metrics_table",
-            )
-            st.caption(
-                "부채비율 = 총부채÷자본, ROE = 당기순이익÷자본×100."
-            )
-
-        bar_fig = build_revenue_profit_bar(chart_df)
-        if bar_fig:
-            st.plotly_chart(bar_fig, use_container_width=True, key="tab_fin_revenue_bar")
-        else:
-            st.info("매출·영업이익 차트를 표시할 데이터가 없습니다.")
-
-    with tab_forecast:
-        with st.spinner("재무 추정·목표주가 계산 중..."):
-            forecast_result = run_cached_financial_forecast(ticker, period)
-        render_forecast_tab(series, info, metrics_df, forecast_result, currency)
+        render_financial_tab(
+            series, info, metrics_df, chart_df, forecast_result, currency, ticker, period
+        )
 
     with tab_report:
         if forecast_result is None:

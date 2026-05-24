@@ -4,45 +4,57 @@ from __future__ import annotations
 
 import streamlit as st
 
-from charts import (
-    build_forecast_bar_chart,
-    build_price_chart,
-    build_revenue_profit_bar,
-    build_scenario_chart,
-    build_target_price_chart,
-)
-from config import DISCLAIMER_KO, PERIOD_OPTIONS
-from formatting import format_percent, format_price, format_ratio, resolve_currency
-from data_loader import (
-    TickerNotFoundError,
-    fetch_chart_price_history,
-    load_analysis_data,
-    validate_ticker,
-)
-from financials import build_metrics_table, compute_annual_amounts_chart, extract_annual_series
-from forecasting import run_cached_financial_forecast
-from indicators import enrich_price_data, summarize_technical_indicators
-from research_report import build_research_report, render_report_html
-from report_pdf import generate_report_pdf
-from macro_dashboard import render_macro_dashboard
-from ui_components import (
-    inject_global_styles,
-    render_app_hero,
-    render_card_open,
-    render_card_close,
-    render_chart_period_selector,
-    render_kpi_row,
-    render_no_ticker_notice,
-    render_section_heading,
-    render_stock_header_card,
-    render_technical_signals_panel,
-)
-
 st.set_page_config(
     page_title="주식 분석 대시보드",
     page_icon="📈",
     layout="wide",
 )
+
+try:
+    from charts import (
+        build_forecast_bar_chart,
+        build_price_chart,
+        build_revenue_profit_bar,
+        build_scenario_chart,
+        build_target_price_chart,
+    )
+    from config import DISCLAIMER_KO, PERIOD_OPTIONS
+    from formatting import format_percent, format_price, format_ratio, resolve_currency
+    from data_loader import (
+        TickerNotFoundError,
+        load_analysis_data,
+        validate_ticker,
+    )
+    try:
+        from data_loader import fetch_chart_price_history
+    except ImportError:
+        from data_loader import fetch_price_history as fetch_chart_price_history
+    from financials import build_metrics_table, compute_annual_amounts_chart, extract_annual_series
+    from forecasting import run_cached_financial_forecast
+    from indicators import enrich_price_data, summarize_technical_indicators
+    from research_report import build_research_report, render_report_html
+    from report_pdf import generate_report_pdf
+    from macro_dashboard import render_macro_dashboard
+    from ui_components import (
+        inject_global_styles,
+        render_app_hero,
+        render_card_open,
+        render_card_close,
+        render_chart_period_selector,
+        render_kpi_row,
+        render_no_ticker_notice,
+        render_section_heading,
+        render_stock_header_card,
+        render_technical_signals_panel,
+    )
+except ImportError as exc:
+    st.error(
+        f"**모듈 import 오류:** `{exc}`\n\n"
+        "GitHub 저장소의 Python 파일이 서로 다른 버전입니다. "
+        "`upload_to_github` 폴더의 **모든 .py 파일**을 GitHub에 다시 올려 주세요."
+    )
+    st.stop()
+
 
 if "analysis_ticker" not in st.session_state:
     st.session_state.analysis_ticker = None
